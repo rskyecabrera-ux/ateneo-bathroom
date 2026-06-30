@@ -1,0 +1,530 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Ateneo Bathroom Review API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: bathrooms
+    description: Bathroom operations
+  - name: reviews
+    description: Review operations
+  - name: stats
+    description: Statistics operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /bathrooms:
+    get:
+      operationId: listBathrooms
+      tags: [bathrooms]
+      summary: List all bathrooms
+      parameters:
+        - name: building
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: gender
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [male, female, unisex]
+      responses:
+        "200":
+          description: List of bathrooms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Bathroom"
+    post:
+      operationId: createBathroom
+      tags: [bathrooms]
+      summary: Add a new bathroom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BathroomInput"
+      responses:
+        "201":
+          description: Created bathroom
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bathroom"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /bathrooms/top:
+    get:
+      operationId: getTopBathrooms
+      tags: [bathrooms]
+      summary: Get top-rated bathrooms
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 5
+        - name: by
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [overall, peeing, pooping, making-out]
+            default: overall
+      responses:
+        "200":
+          description: Top-rated bathrooms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Bathroom"
+
+  /bathrooms/{id}:
+    get:
+      operationId: getBathroom
+      tags: [bathrooms]
+      summary: Get a bathroom by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Bathroom details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BathroomWithReviews"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /bathrooms/{id}/reviews:
+    get:
+      operationId: getBathroomReviews
+      tags: [reviews]
+      summary: Get reviews for a bathroom
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+    post:
+      operationId: createReview
+      tags: [reviews]
+      summary: Submit a review for a bathroom
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInput"
+      responses:
+        "201":
+          description: Created review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Bathroom not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Get overall app statistics
+      responses:
+        "200":
+          description: App statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    Bathroom:
+      type: object
+      properties:
+        id:
+          type: integer
+        building:
+          type: string
+        floor:
+          type: string
+        gender:
+          type: string
+          enum: [male, female, unisex]
+        description:
+          type: ["string", "null"]
+        avgRating:
+          type: ["number", "null"]
+        avgCleanliness:
+          type: ["number", "null"]
+        avgSmell:
+          type: ["number", "null"]
+        hasPaperPercent:
+          type: ["number", "null"]
+        hasSoapPercent:
+          type: ["number", "null"]
+        avgPeeingRating:
+          type: ["number", "null"]
+        avgPoopingRating:
+          type: ["number", "null"]
+        avgMakingOutRating:
+          type: ["number", "null"]
+        reviewCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - building
+        - floor
+        - gender
+        - description
+        - avgRating
+        - avgCleanliness
+        - avgSmell
+        - hasPaperPercent
+        - hasSoapPercent
+        - avgPeeingRating
+        - avgPoopingRating
+        - avgMakingOutRating
+        - reviewCount
+        - createdAt
+
+    BathroomWithReviews:
+      type: object
+      properties:
+        id:
+          type: integer
+        building:
+          type: string
+        floor:
+          type: string
+        gender:
+          type: string
+          enum: [male, female, unisex]
+        description:
+          type: ["string", "null"]
+        avgRating:
+          type: ["number", "null"]
+        avgCleanliness:
+          type: ["number", "null"]
+        avgSmell:
+          type: ["number", "null"]
+        hasPaperPercent:
+          type: ["number", "null"]
+        hasSoapPercent:
+          type: ["number", "null"]
+        avgPeeingRating:
+          type: ["number", "null"]
+        avgPoopingRating:
+          type: ["number", "null"]
+        avgMakingOutRating:
+          type: ["number", "null"]
+        reviewCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+      required:
+        - id
+        - building
+        - floor
+        - gender
+        - description
+        - avgRating
+        - avgCleanliness
+        - avgSmell
+        - hasPaperPercent
+        - hasSoapPercent
+        - avgPeeingRating
+        - avgPoopingRating
+        - avgMakingOutRating
+        - reviewCount
+        - createdAt
+        - reviews
+
+    BathroomInput:
+      type: object
+      properties:
+        building:
+          type: string
+          minLength: 1
+        floor:
+          type: string
+          minLength: 1
+        gender:
+          type: string
+          enum: [male, female, unisex]
+        description:
+          type: string
+      required:
+        - building
+        - floor
+        - gender
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: integer
+        bathroomId:
+          type: integer
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        cleanliness:
+          type: integer
+          minimum: 1
+          maximum: 5
+        smell:
+          type: integer
+          minimum: 1
+          maximum: 5
+        hasPaper:
+          type: boolean
+        hasSoap:
+          type: boolean
+        peeingRating:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 5
+        poopingRating:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 5
+        makingOutRating:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 5
+        comment:
+          type: ["string", "null"]
+        reviewerName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - bathroomId
+        - rating
+        - cleanliness
+        - smell
+        - hasPaper
+        - hasSoap
+        - peeingRating
+        - poopingRating
+        - makingOutRating
+        - comment
+        - reviewerName
+        - createdAt
+
+    ReviewInput:
+      type: object
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        cleanliness:
+          type: integer
+          minimum: 1
+          maximum: 5
+        smell:
+          type: integer
+          minimum: 1
+          maximum: 5
+        hasPaper:
+          type: boolean
+        hasSoap:
+          type: boolean
+        peeingRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        poopingRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        makingOutRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+        reviewerName:
+          type: string
+      required:
+        - rating
+        - cleanliness
+        - smell
+        - hasPaper
+        - hasSoap
+
+    Stats:
+      type: object
+      properties:
+        totalBathrooms:
+          type: integer
+        totalReviews:
+          type: integer
+        avgRatingOverall:
+          type: ["number", "null"]
+        avgPeeingRating:
+          type: ["number", "null"]
+        avgPoopingRating:
+          type: ["number", "null"]
+        avgMakingOutRating:
+          type: ["number", "null"]
+        buildingBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/BuildingStat"
+        recentReviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecentReview"
+      required:
+        - totalBathrooms
+        - totalReviews
+        - avgRatingOverall
+        - avgPeeingRating
+        - avgPoopingRating
+        - avgMakingOutRating
+        - buildingBreakdown
+        - recentReviews
+
+    BuildingStat:
+      type: object
+      properties:
+        building:
+          type: string
+        bathroomCount:
+          type: integer
+        avgRating:
+          type: ["number", "null"]
+      required:
+        - building
+        - bathroomCount
+        - avgRating
+
+    RecentReview:
+      type: object
+      properties:
+        id:
+          type: integer
+        bathroomId:
+          type: integer
+        building:
+          type: string
+        floor:
+          type: string
+        gender:
+          type: string
+        rating:
+          type: integer
+        comment:
+          type: ["string", "null"]
+        reviewerName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - bathroomId
+        - building
+        - floor
+        - gender
+        - rating
+        - comment
+        - reviewerName
+        - createdAt
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
